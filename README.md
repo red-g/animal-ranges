@@ -9,4 +9,4 @@ The bounds function returns the center and radius of animal's range given a list
 The plotdata function takes in the same arguments as the bounds function but instead of returning range data shows an overlay of the range circle and your data points.
 
 <h1>Airtags</h1>
-Included in the repo is a script for tracking an animal using airtags, and can only run on macs. To start it, customize the included constants as directed in the script, and call the track function.
+Included in the repo is a script for tracking an animal using airtags, which can only run on macs. To start it, customize the included constants as directed in the script, and call the track function.
