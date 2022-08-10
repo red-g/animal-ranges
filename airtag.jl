@@ -9,8 +9,8 @@ using JSON3
 
 include("range.jl")
 
-const user = "reed"
-const airtag = "Ari"
+const user = "YOUR_USERNAME"
+const airtag = "YOUR_AIRTAG"
 const interval = 10
 
 const pospath = "/Users/$(user)/Library/Caches/com.apple.findmy.fmipcore/Items.data"
