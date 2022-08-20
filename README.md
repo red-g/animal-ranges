@@ -10,3 +10,6 @@ The plotdata function takes in the same arguments as the bounds function but ins
 
 <h1>Airtags</h1>
 Included in the repo is a script for tracking an animal using airtags, which can only run on macs. To start it, customize the included constants as directed in the script, and call the track function.
+
+<h1>Dependencies</h1>
+The dependencies for the main project are the StatsBase, LinearAlgebra, and Plots packages. If you are using the airtag project, then the JSON3 package is also required (packages can be installed by pressing "]" in the Julia REPL, and using the command "add MY_PACKAGE").
