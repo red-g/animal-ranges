@@ -18,3 +18,4 @@ struct Timed
 end
 
 Timed(pos) = Timed(Time(1), pos)
+

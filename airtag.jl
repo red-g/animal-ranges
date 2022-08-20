@@ -1,62 +1,94 @@
 #An implementation using airtags to track an animal's location
 
 #To use:
-# - Set user and airtag to your user and airtag name. The update interval defaults to 10 seconds, but can be adjusted however you wish.
-# - Open findmy to keep updating the cache
-# - Run this script and call the track function
+# - Variable setup:
+#    - At the bottom of the page you will find three variables: user, airtags, and interval
+#    - Set user to your macos username
+#    - Set airtags to a list of airtags (initialized Airtag(name, positionsFilePath))
+#        - Make sure to add all the storage files you referenced in the airtags to the project directory!
+#    - Interval controls the how often the cache is checked, and defaults to 10 seconds. It can be adjusted however you wish.
+# - Open findmy to start updating cache
+# - Run this script and call track!(airtags, interval) to start tracking
+# - When finished, call save!(airtags) to save the position data to their respective files
+# - Load your saved data back into the program with the load(path) function, or multiple with load([paths...])
 
 using JSON3
 
 include("range.jl")
 
-const user = "YOUR_USERNAME"
-const airtag = "YOUR_AIRTAG"
-const interval = 10
+Base.string(p::Position) = join(coords(p), ",")
+Base.parse(::Type{Position}, p::AbstractString) = split(p, ","; limit=fieldcount(Position)) .|>
+                                                  (c -> parse(Float64, c)) |>
+                                                  Base.splat(Position)
 
-const pospath = "/Users/$(user)/Library/Caches/com.apple.findmy.fmipcore/Items.data"
-const data = "positions.txt"
+Base.string(t::Time) = string(t.val)
+Base.parse(::Type{Time}, t::AbstractString) = parse(UInt, t) |> Time
 
-function savedata(d=data)
-    open(d, "a") do file
-        strpos = join(printpos.(positions), "\n")
-        write(file, strpos)
-    end
-    empty!(positions)
+Base.string(t::Timed) = "$(string(t.time)) $(string(t.pos))"
+Base.parse(::Type{Timed}, t::AbstractString) = split(t; limit=2) |>
+                                               (p -> parse.((Time, Position), p)) |>
+                                               Base.splat(Timed)
+
+Base.string(tp::Vector{Timed}) = join(string.(tp), "\n")
+Base.parse(::Type{Vector{Timed}}, tps::AbstractString) = split(tps, "\n") .|>
+                                                         tp -> parse(Timed, tp)
+
+struct AirTag
+    name::String
+    positions::Vector{Timed}
+    file::String
 end
 
-function loaddata(d=data)
-    data = read(d, String)
+AirTag(name::String, file::String) = AirTag(name, [], "$(file).txt")
+
+function load(path::String)::Vector{Timed}
+    data = read("$(path).txt", String)
     if isempty(data)
         Timed[]
     else
-        split(data, "\n") .|> function (stp)
-            st, sp = split(stp; limit=2)
-            t = parse(Int, st) |> Time
-            p = split(sp, ","; limit=fieldcount(Position)) .|> (c -> parse(Float64, c)) |> Base.splat(Pos)
-            Timed(t, p)
-        end
+        parse(Vector{Timed}, data[2:end])
     end
 end
 
-const positions = loaddata()
+load(paths::Vector{String}) = load.(paths)
 
-function getpos(name)
-    posdata = (JSON3.read ∘ read)(pospath, String)
+function save!(at::AirTag)
+    open(at.file, "a") do io
+        write(io, "\n$(string(at.positions))")
+    end
+    empty!(at.positions)
+end
+
+save!(ats::Vector{AirTag}) = (save!.(ats); nothing)
+
+function getpos(name::String)
+    posdata = (JSON3.read ∘ read)(findmyCache, String)
     tracked = (first ∘ Iterators.filter)(tracked -> tracked.name == name, posdata)
     location = tracked.location
     Position(location.longitude, location.latitude)
 end
 
-function updatepos()
-    pos = getpos(airtag)
-    action = if isempty(positions) || positions[end].pos ≠ pos
-        push!(positions, Timed(pos))
+function updatepos(at::AirTag)
+    pos = getpos(at.name)
+    action = if isempty(at.positions) || at.positions[end].pos ≠ pos
+        push!(at.positions, Timed(pos))
         "Added"
     else
-        positions[end].time.val += 1
+        at.positions[end].time.val += 1
         "Extended"
     end
     println("$(action) position")
 end
 
-track() = Timer(_ -> updatepos(), 0; interval=interval)
+track!(ats::Vector{AirTag}, itv::Int) = Timer(_ -> updatepos.(ats), 0; interval=itv)
+
+#User configurations
+
+const user = "YOUR_USERNAME"
+const interval = 10
+
+#Ex: [AirTag("Fluffy", "positions/John"), AirTag("Spot", "positions/Spot")]
+#Note: Do NOT include the file extension (.txt) in your file paths
+const airtags = []
+
+const findmyCache = "/Users/$(user)/Library/Caches/com.apple.findmy.fmipcore/Items.data"
