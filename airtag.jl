@@ -11,6 +11,7 @@
 # - Run this script and call track!(airtags, interval) to start tracking
 # - When finished, call save!(airtags) to save the position data to their respective files
 # - Load your saved data back into the program with the load(path) function, or multiple with load([paths...])
+# - To plot an animal's range select an airtag from airtags and call plotdata on its positions field. Ex: plotdata(airtags[1].positions)
 
 using JSON3
 
